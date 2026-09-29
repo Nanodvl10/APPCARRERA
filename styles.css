@@ -795,3 +795,13 @@ html[data-theme="light"] .logro,html[data-theme="light"] .ring-c~*{background:#f
 .pal-it .kc.dim{opacity:.7}
 .pal-pos{align-self:center;flex:0 0 auto;font-size:12px;font-weight:800;padding:4px 9px;border-radius:999px;background:rgba(255,255,255,.07);color:var(--mist, #e9edf5)}
 .pal-pos.pod{background:rgba(236,182,63,.18);color:#ecb63f}
+
+/* ---- Pulido visual v2 ---- */
+/* icono del trofeo dentro de la etiqueta de tiempo (antes salia enorme y negro) */
+.cd-pill{display:inline-flex;align-items:center;gap:5px;font-variant-numeric:tabular-nums}
+.cd-pill svg{width:13px;height:13px;flex:0 0 13px;stroke:currentColor;fill:none}
+.cd-pill.past{color:var(--mist)}
+/* franja solida bajo la barra de estado: el contenido ya no se ve borroso al hacer scroll */
+body::before{content:"";position:fixed;top:0;left:0;right:0;height:env(safe-area-inset-top,0px);background:var(--g900);z-index:40;pointer-events:none}
+/* tiempo real en tarjetas */
+.sv.gold,.n.gold{color:#ecb63f}
