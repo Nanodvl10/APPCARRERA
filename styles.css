@@ -811,3 +811,72 @@ body::before{content:"";position:fixed;top:0;left:0;right:0;height:env(safe-area
 .pal-it .st svg{width:16px;height:16px}
 .card.strat{margin-top:12px}
 .next-cta .wide-btn{margin-top:0}
+
+/* =====================================================================
+   DISEÑO v3 · más limpio: un solo color de acento, menos mayúsculas,
+   menos cajas y menos brillos
+   ===================================================================== */
+
+/* -- Cabecera de Inicio: logo pequeño + saludo -- */
+.kicker.brand{font-size:12px;letter-spacing:.14em;color:var(--dim)}
+.kicker.brand b{color:var(--ember);font-weight:800}
+.home-head h1{font-size:28px;letter-spacing:-.02em;margin:6px 0 4px}
+.home-head .meta{font-size:13.5px}
+
+/* -- Etiquetas en texto normal (las mayúsculas quedan solo en títulos de sección) -- */
+.cc-h,.fold>summary,.pred-rows>div span,.ob .ok2,.streak span,.lb-grid label,.mood-h,.forma-l,.tm-h,.swap-tipo,.rhero-kick,.kicker:not(.brand),.skm-ter{
+  text-transform:none;letter-spacing:0}
+.cc-h{font-size:14px;font-weight:700;color:var(--mist)}
+.cc-h svg{color:var(--ember)}
+.fold>summary{font-size:14px;font-weight:700}
+.rhero-kick,.kicker:not(.brand){font-size:12.5px;font-weight:700}
+.tm-h{font-size:12px;color:var(--dim)}
+.pred-rows>div span,.ob .ok2,.lb-grid label,.mood-h,.forma-l{font-size:12px;font-weight:600;color:var(--dim)}
+.streak span{font-size:11px;font-weight:600}
+.section-label{font-size:11px;letter-spacing:.08em;color:var(--dim2);margin:26px 0 10px}
+
+/* -- Un solo acento: naranja. Nada de degradados dorados ni brillos -- */
+.today:not(.race-day):not(.sess){background:var(--g800);border:1px solid var(--line2)}
+.hc-cd,.cd-pill{background:rgba(13,15,20,.72);color:var(--ember-soft);border:1px solid rgba(255,90,44,.35);box-shadow:none;
+  -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.hc-cd.past,.cd-pill.past{color:var(--dim);border-color:var(--line2)}
+.btn.primary{box-shadow:none}
+.btn.primary:active{filter:brightness(.92)}
+.hc-stats .s+.s .sv.ember,.stats .stat+.stat .n.ember{color:var(--mist)}
+.sv.gold,.n.gold{color:var(--gold)}
+.hc-tag{letter-spacing:.05em}
+
+/* -- Predicción: filas separadas por línea en vez de cajas dentro de caja -- */
+.pred-rows.flat{gap:0;margin-top:6px}
+.pred-rows.flat>div{background:none;border:0;border-top:1px solid var(--line);border-radius:0;padding:10px 0}
+.pred-rows.flat>div:first-child{border-top:0}
+
+/* -- Tarjetas "Otras carreras" -- */
+.minicard{align-items:center}
+.minicard .mc-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.minicard .mc-n,.minicard .mc-d{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.minicard .mc-n{font-size:15px;font-weight:700}
+.minicard .mc-d{margin-top:0}
+.minicard .mc-cd{flex:none;margin-left:6px;font-size:12px;padding:5px 9px;border-radius:20px;background:rgba(255,90,44,.12);color:var(--ember-soft)}
+.minicard .mc-cd.done{background:rgba(236,182,63,.14);color:var(--gold);font-variant-numeric:tabular-nums}
+.minicard .mc-cd svg{width:12px;height:12px;vertical-align:-1px}
+
+/* -- Seguridad: ningún icono dentro de una etiqueta puede salir gigante -- */
+.hc-cd svg,.pal-pos svg,.tag svg,.ok svg{width:13px;height:13px;flex:none}
+
+/* -- Accesos rápidos más ligeros -- */
+.qbtn{font-weight:650}
+.qbtn svg{color:var(--ember)}
+
+/* -- Tema claro: mantener contraste de las etiquetas nuevas -- */
+html[data-theme="light"] .hc-cd,html[data-theme="light"] .cd-pill{background:rgba(255,255,255,.85)}
+html[data-theme="light"] .cc-h{color:#1a1f2b}
+
+/* -- v3b: menos cajas dentro de cajas -- */
+.rec-grid{gap:0 16px}
+.rec-grid>div{background:none;border:0;border-radius:0;padding:6px 0}
+.rec-grid>div b{font-size:22px}
+.card.strat .readout{background:none;border:0;border-left:3px solid var(--ember);border-radius:0;padding:2px 0 2px 12px;margin:8px 0 2px}
+.obj .t{font-size:12.5px;font-weight:600;letter-spacing:0}
+/* días de descanso más discretos en el plan */
+.acc:has(.bar.b-suave):not(:has(.tag)) .ent{color:var(--dim)}
