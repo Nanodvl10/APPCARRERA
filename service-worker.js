@@ -6,7 +6,7 @@ const PREFIX = 'carreraap-';
 const CACHE = PREFIX + 'v1';
 const ASSETS = [
   './','index.html','styles.css','app.js','profile.js',
-  'races/registry.js','races/corral-del-diablo.js','manifest.json',
+  'races/registry.js','races/corral-del-diablo.js','races/recuperacion-post-corral.js','manifest.json',
   'icon-192.png','icon-512.png','apple-touch-icon.png'
 ];
 self.addEventListener('install', e => {
