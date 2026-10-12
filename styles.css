@@ -880,3 +880,12 @@ html[data-theme="light"] .cc-h{color:#1a1f2b}
 .obj .t{font-size:12.5px;font-weight:600;letter-spacing:0}
 /* días de descanso más discretos en el plan */
 .acc:has(.bar.b-suave):not(:has(.tag)) .ent{color:var(--dim)}
+
+/* ---- Análisis automático ---- */
+.card.analisis .imp-grid{margin-bottom:6px}
+.ins{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:8px}
+.ins li{position:relative;padding:9px 12px 9px 30px;border-radius:12px;background:var(--g800);border:1px solid var(--line);font-size:13px;line-height:1.4;color:var(--mist)}
+.ins li::before{content:"";position:absolute;left:12px;top:15px;width:8px;height:8px;border-radius:50%}
+.ins li.warn::before{background:var(--ember)}
+.ins li.ok::before{background:var(--medio)}
+.ins li.info::before{background:#6f8fae}

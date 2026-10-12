@@ -82,7 +82,7 @@ function nextMeal(day){if(!day||!day.menu)return null;var now=new Date();var cur
   day.menu.forEach(function(it){var m=String(it[0]).match(/(\d{1,2}):(\d{2})/);if(!m)return;var mins=+m[1]*60+ +m[2];if(mins>=cur&&(!best||mins<best.mins))best={mins:mins,it:it};});
   return best;}
 function featuredRace(){var races=window.RACES.slice().sort(function(a,b){return a.date<b.date?-1:1;});var up=races.filter(function(r){return daysLeft(r.date)>=0;});return up[0]||races[races.length-1];}
-function resultOf(id){var r=getJ(KEYS(id).result);return r.tiempo?r:null;}
+function resultOf(id){var r=getJ(KEYS(id).result);if(r.tiempo)return r;var rc=(window.RACES||[]).filter(function(x){return x.id===id;})[0];return rc&&rc.resultado&&rc.resultado.tiempo?rc.resultado:null;}
 
 /* ---------- svg helpers ---------- */
 function heroProfile(p,cls){return '<svg class="'+cls+'" viewBox="0 0 '+p.viewBox[2]+' '+p.viewBox[3]+'" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id="hg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff5a2c" stop-opacity=".32"/><stop offset="1" stop-color="#ff5a2c" stop-opacity="0"/></linearGradient></defs><path d="'+p.area+'" fill="url(#hg)"/><path class="hp-line" d="'+p.line+'" fill="none" stroke="#ff5a2c" stroke-width="7" stroke-linejoin="round" stroke-linecap="round"/></svg>';}
@@ -222,9 +222,9 @@ function renderHome(){clearTimer();
   var html='<div class="view"><header class="home-head"><div class="hh-row"><div><div class="kicker brand">CARRERA<b>AP</b></div><h1>'+(P().nombre?'Hola, '+esc(P().nombre):'Hola')+'</h1></div>';
   if(featured){prep(featured);var sk=streak(featured);if(sk>0)html+='<div class="streak">'+I.fire+'<b>'+sk+'</b><span>racha</span></div>';}
   html+='</div><div class="meta">'+(function(){var d=new Date();var t=d.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'});return t.charAt(0).toUpperCase()+t.slice(1);})()+'</div></header><div class="wrap content">';
-  if(featured){var past=daysLeft(featured.date)<0,dl=daysLeft(featured.date),today=findToday(featured),res=resultOf(featured.id);
+  if(featured){var dl=daysLeft(featured.date),res=resultOf(featured.id),past=dl<0||(dl===0&&!!res&&!featured.block),today=findToday(featured);
     html+='<div class="section-label">Hoy</div>';
-    if(dl===0&&!featured.block){html+='<div class="today race-day"><div class="td-body"><div class="td-ent">'+I.carrera+' HOY ES EL DÍA</div><div class="td-sub">'+featured.name+' &middot; salida '+featured.time+'</div><div class="td-actions"><button class="btn primary" data-go="#/race/'+featured.id+'/carrera">Modo carrera '+I.arrow+'</button><button class="btn" data-go="#/race/'+featured.id+'/mapa">Mapa</button></div></div></div>';}
+    if(dl===0&&!featured.block&&!past){html+='<div class="today race-day"><div class="td-body"><div class="td-ent">'+I.carrera+' HOY ES EL DÍA</div><div class="td-sub">'+featured.name+' &middot; salida '+featured.time+'</div><div class="td-actions"><button class="btn primary" data-go="#/race/'+featured.id+'/carrera">Modo carrera '+I.arrow+'</button><button class="btn" data-go="#/race/'+featured.id+'/mapa">Mapa</button></div></div></div>';}
     else if(past&&featured.block){html+='<div class="today"><div class="td-body"><div class="td-ent">'+featured.name+' completado</div><div class="td-sub">Bloque terminado. Toca preparar la siguiente carrera.</div></div></div>';}
     else if(past){html+='<div class="today"><div class="td-body"><div class="td-ent">'+featured.name+' hecha</div><div class="td-sub">'+(res?'<span class="ok">'+I.trophy+' '+esc(res.tiempo)+(res.puesto?' &middot; puesto '+esc(res.puesto):'')+'</span>':'Registra tu resultado para guardarlo en tu historial')+'</div><div class="td-actions"><button class="btn primary" data-go="#/race/'+featured.id+'/carrera">'+(res?'Ver resultado':'Anotar resultado')+' '+I.arrow+'</button></div></div></div>';}
     else if(today){var log=getJ(KEYS(featured.id).log)[today.iso]||{};var nm=nextMeal(today);
@@ -235,9 +235,9 @@ function renderHome(){clearTimer();
     else{html+='<div class="today"><div class="td-body"><div class="td-ent">Sin plan para hoy</div><div class="td-sub">'+(todayISO()<featured.planStart?'El plan de '+featured.name+' empieza el '+fmtShort(featured.planStart):'Día libre')+'</div></div></div>';}
     (function(){var Fx=forma();if(Fx&&(Fx.estado==='Cargado'||Fx.estado==='Riesgo')){html+='<div class="suger">'+I.fire+'<div><b>Vas '+Fx.estado.toLowerCase()+'.</b> '+Fx.texto+'</div></div>';}})();
     if(past)html+='<div class="card soft next-cta"><div class="cc-h">'+I.dias+' Próxima carrera</div><p class="pf-note" style="margin:4px 0 10px">Aún no tienes otra carrera en el calendario.</p><button class="btn primary wide-btn" data-go="#/carreras">'+I.trophy+' Ver mis carreras</button></div>';
-    html+='<div class="section-label">'+(featured.block?(past?'Último bloque':'Bloque actual'):(past?'Última carrera':'Próxima carrera'))+'</div><a class="hero-card" href="#/race/'+featured.id+'"><div class="hc-media">'+heroProfile(featured.profile,'')+'<div class="hc-fade"></div><span class="hc-tag">'+(featured.kind||'Trail')+' &middot; '+featured.gain+'</span><span class="hc-cd'+(past?' past':'')+'">'+cdLabel(featured,res)+'</span><div class="hc-body"><div class="hc-name">'+featured.name+'</div><div class="hc-sub">'+featured.subtitle+' &middot; '+(featured.block?'hasta '+fmtDate(featured.date):fmtDate(featured.date)+', '+featured.time)+'</div></div></div><div class="hc-stats"><div class="s"><div class="sv ember">'+featured.km+'</div><div class="sl">km'+(featured.block?' en total':'')+'</div></div><div class="s"><div class="sv ember">'+(featured.block?semanasBloque(featured).length:featured.dplus)+'</div><div class="sl">'+(featured.block?'semanas':'metros +')+'</div></div><div class="s">'+(function(){if(featured.block){var L=getJ(KEYS(featured.id).log);var ses=featured.days.filter(function(x){return !x.w&&x.isTraining;});var hh=ses.filter(function(x){return (L[x.iso]||{}).hecho;}).length;return '<div class="sv">'+hh+'/'+ses.length+'</div><div class="sl">entrenos</div>';}var R=getJ(KEYS(featured.id).result);return daysLeft(featured.date)<0&&R.tiempo?'<div class="sv gold">'+esc(R.tiempo)+'</div><div class="sl">tu tiempo</div>':'<div class="sv">'+featured.estimate+'</div><div class="sl">objetivo</div>';})()+'</div></div></a>'+
+    html+='<div class="section-label">'+(featured.block?(past?'Último bloque':'Bloque actual'):(past?'Última carrera':'Próxima carrera'))+'</div><a class="hero-card" href="#/race/'+featured.id+'"><div class="hc-media">'+heroProfile(featured.profile,'')+'<div class="hc-fade"></div><span class="hc-tag">'+(featured.kind||'Trail')+' &middot; '+featured.gain+'</span><span class="hc-cd'+(past?' past':'')+'">'+cdLabel(featured,res)+'</span><div class="hc-body"><div class="hc-name">'+featured.name+'</div><div class="hc-sub">'+featured.subtitle+' &middot; '+(featured.block?'hasta '+fmtDate(featured.date):fmtDate(featured.date)+', '+featured.time)+'</div></div></div><div class="hc-stats"><div class="s"><div class="sv ember">'+featured.km+'</div><div class="sl">km'+(featured.block?' en total':'')+'</div></div><div class="s"><div class="sv ember">'+(featured.block?semanasBloque(featured).length:featured.dplus)+'</div><div class="sl">'+(featured.block?'semanas':'metros +')+'</div></div><div class="s">'+(function(){if(featured.block){var L=getJ(KEYS(featured.id).log);var ses=featured.days.filter(function(x){return !x.w&&x.isTraining;});var hh=ses.filter(function(x){return (L[x.iso]||{}).hecho;}).length;return '<div class="sv">'+hh+'/'+ses.length+'</div><div class="sl">entrenos</div>';}var R=resultOf(featured.id)||{};return daysLeft(featured.date)<=0&&R.tiempo?'<div class="sv gold">'+esc(R.tiempo)+'</div><div class="sl">tu tiempo</div>':'<div class="sv">'+featured.estimate+'</div><div class="sl">objetivo</div>';})()+'</div></div></a>'+
       '<div class="quick">'+(featured.block?'<button class="qbtn" data-go="#/race/'+featured.id+'">'+I.dias+'<span>Plan</span></button><button class="qbtn" data-go="#/carreras">'+I.trophy+'<span>Carreras</span></button>':'<button class="qbtn" data-go="#/race/'+featured.id+'/mapa">'+I.mapa+'<span>Mapa</span></button><button class="qbtn" data-go="#/race/'+featured.id+'/carrera">'+I.carrera+'<span>Día D</span></button>')+'<button class="qbtn" data-go="#/compra">'+I.cart+'<span>Compra</span></button><button class="qbtn" data-go="#/herramientas">'+I.ritmos+'<span>Calc</span></button></div>';}
-  if(rest.length){html+='<div class="section-label">Otras carreras</div>';rest.forEach(function(r){var past=daysLeft(r.date)<0;var rs=resultOf(r.id);html+='<a class="minicard" href="#/race/'+r.id+'"><span class="mc-mini">'+miniProfile(r.profile)+'</span><span class="mc-t"><span class="mc-n">'+esc(r.name)+'</span><span class="mc-d">'+fmtShort(r.date)+' &middot; '+esc(r.dist||'')+(r.gain?' &middot; '+esc(r.gain):'')+'</span></span><span class="mc-cd'+(past&&rs?' done':'')+'">'+(past&&rs?esc(rs.tiempo):cdLabel(r,rs))+'</span></a>';});}
+  if(rest.length){html+='<div class="section-label">Otras carreras</div>';rest.forEach(function(r){var past=daysLeft(r.date)<0||(daysLeft(r.date)===0&&!!resultOf(r.id));var rs=resultOf(r.id);html+='<a class="minicard" href="#/race/'+r.id+'"><span class="mc-mini">'+miniProfile(r.profile)+'</span><span class="mc-t"><span class="mc-n">'+esc(r.name)+'</span><span class="mc-d">'+fmtShort(r.date)+' &middot; '+esc(r.dist||'')+(r.gain?' &middot; '+esc(r.gain):'')+'</span></span><span class="mc-cd'+(past&&rs?' done':'')+'">'+(past&&rs?esc(rs.tiempo):cdLabel(r,rs))+'</span></a>';});}
   if(!races.length)html+='<div class="card"><p class="lead" style="margin:0">Aún no hay carreras. Pásale a Claude un GPX y una fecha para añadir la primera.</p></div>';
   html+='</div></div>';app().innerHTML=html;window.scrollTo(0,0);mountHomeNav('inicio');
   var tw=document.getElementById('td-w');if(tw&&featured){var co=coordsEntreno(featured);if(co){tiempoDia(todayISO(),P().horaEntreno||'18:00',co,function(d){if(d)tw.innerHTML=chipTiempo(d)+'<small> a las '+d.hora+'</small>';});}}}
@@ -307,7 +307,7 @@ function detalleSesion(race,iso){var x=race.days.filter(function(d){return d.iso
   if(x.race){location.hash='#/race/'+race.id+'/carrera';return;}
   var km=parseFloat(String(l.km||'').replace(',','.'))||0,sec=parseTime(l.tiempo);
   var cuerpo='<div class="imp-grid"><div><span class="ok2">distancia</span><b>'+num(km)+'<small> km</small></b></div><div><span class="ok2">tiempo</span><b>'+(l.tiempo||'-')+'</b></div>'+(km&&sec?'<div><span class="ok2">ritmo</span><b>'+fmtPace(sec,km).replace(' /km','')+'<small> /km</small></b></div>':'')+(l.gain!=null&&l.gain!==''?'<div><span class="ok2">desnivel +</span><b>'+l.gain+'<small> m</small></b></div>':'')+(l.hrAvg?'<div><span class="ok2">FC media</span><b class="hr">'+l.hrAvg+'</b></div>':'')+(l.hrMax?'<div><span class="ok2">FC max</span><b class="hr">'+l.hrMax+'</b></div>':'')+'</div>'+
-    (tz?'<div class="cc-h" style="margin-top:8px">Tiempo en zonas</div>'+barraZonas(tz):'')+(l.route&&l.route.length?routeMini(l.route):'')+(l.splits&&l.splits.length?'<div class="cc-h" style="margin-top:10px">Parciales</div>'+splitsChart(l.splits):'')+analisisSesion(race,x,l)+(l.notas?'<p class="pf-note" style="margin-top:10px">&ldquo;'+esc(l.notas)+'&rdquo;</p>':'')+
+    (tz?'<div class="cc-h" style="margin-top:8px">Tiempo en zonas</div>'+barraZonas(tz):'')+(l.route&&l.route.length?routeMini(l.route):'')+(l.splits&&l.splits.length?'<div class="cc-h" style="margin-top:10px">Parciales</div>'+splitsChart(l.splits):'')+htmlAnalisis(l.insights?l:null)+analisisSesion(race,x,l)+(l.notas?'<p class="pf-note" style="margin-top:10px">&ldquo;'+esc(l.notas)+'&rdquo;</p>':'')+
     '<button class="btn wide-btn" data-go="#/race/'+race.id+'/dias/'+iso+'/log" style="margin-top:12px">Editar este entreno</button>';
   abrirHoja(esc(x.ent),fmtDate(iso)+(l.src==='import'?' &middot; importado':l.src==='strava'?' &middot; Strava':''),cuerpo);}
 function share(title,text){if(navigator.share){navigator.share({title:title,text:text}).catch(function(){});}else if(navigator.clipboard){navigator.clipboard.writeText(text).then(function(){toast('Copiado al portapapeles');});}else{toast(text);}}
@@ -319,8 +319,8 @@ function palGet(){var P=getJ('palmares');if(!P.items)P.items=[];
   return P;}
 function palNum(v){return parseFloat(String(v||'').replace(',','.'))||0;}
 function palItems(){var P=palGet();var out=P.items.map(function(x){var o=Object.assign({},x);o.src='manual';return o;});
-  (window.RACES||[]).forEach(function(r){var R=getJ(KEYS(r.id).result);if(!R||!R.tiempo)return;
-    out.push({id:'app-'+r.id,src:'app',raceId:r.id,fecha:r.date,nombre:r.name,lugar:r.subtitle||'',tipo:/trail/i.test(r.kind||'')?'trail':'asfalto',km:String(r.totalKm),dplus:String(r.dplus||'').replace(/[^\d]/g,''),tiempo:R.tiempo,puesto:R.puesto||'',notas:R.notas||''});});
+  (window.RACES||[]).forEach(function(r){var R=resultOf(r.id);if(!R)return;
+    out.push({id:'app-'+r.id,src:'app',raceId:r.id,fecha:r.date,nombre:r.name,lugar:r.subtitle||'',tipo:/trail/i.test(r.kind||'')?'trail':'asfalto',km:String(R.km||r.totalKm),dplus:String(r.dplus||'').replace(/[^\d]/g,''),tiempo:R.tiempo,puesto:R.puesto||'',notas:R.notas||''});});
   out.forEach(function(x){x._s=parseTime(x.tiempo);x._km=palNum(x.km);x._d=palNum(x.dplus);x._eq=x._km+x._d/100;});
   return out.sort(function(a,b){return a.fecha<b.fecha?1:-1;});}
 function palPodio(p){var m=String(p||'').match(/^\s*(\d+)/);return m&&+m[1]>=1&&+m[1]<=3;}
@@ -422,10 +422,10 @@ function buildICS(race){prep(race);var L=['BEGIN:VCALENDAR','VERSIÓN:2.0','PROD
 
 /* ---------- RACE ---------- */
 var DEFAULT_GEAR=["Dorsal e imperdibles / chip","Geles (uno con cafeína)","Bidón con isotónica","Reloj cargado","Zapatillas (las de siempre)","Ropa según el tiempo + cortavientos","Gorra y gafas","Desayuno preparado","Recuperador para la meta","Ropa de cambio y toalla","Coche con gasolina, salir con margen"];
-function renderRace(race,tab,focusIso,openLog){clearTimer();prep(race);tab=tab||'dias';if(race.block)tab='dias';var past=daysLeft(race.date)<0,dl=daysLeft(race.date);var K=KEYS(race.id);var res=resultOf(race.id);var jumps=race.jumps||[["Salida",0],["Meta",race.totalKm]];
+function renderRace(race,tab,focusIso,openLog){clearTimer();prep(race);tab=tab||'dias';if(race.block)tab='dias';var dl=daysLeft(race.date),past=dl<0||(dl===0&&!race.block&&!!resultOf(race.id));var K=KEYS(race.id);var res=resultOf(race.id);var jumps=race.jumps||[["Salida",0],["Meta",race.totalKm]];
   var html='<div class="view"><div class="topbar" id="topbar"><button class="tb-back" data-go="#/">'+I.back+'</button><span class="tb-title">'+race.name+'</span></div><button class="backfab" data-go="#/" aria-label="Volver">'+I.back+'</button><div class="cd-pill'+(past?' past':'')+'">'+cdLabel(race,res)+'</div>'+
-    '<div class="rhero">'+heroProfile(race.profile,'rhero-svg')+'<div class="rhero-fade"></div><div class="rhero-body"><div class="rhero-kick">'+(race.block?'Bloque &middot; plan de entrenamiento':(race.kind||'Trail')+' &middot; plan de carrera')+'</div><div class="rhero-title">'+(race.nameHTML||race.name)+'</div><div class="rhero-sub">'+race.subtitle+' &middot; <b>'+(race.block?'hasta '+fmtDate(race.date):fmtDate(race.date)+', '+race.time)+'</b></div></div></div>'+
-    '<div class="stats"><div class="stat"><div class="n ember">'+race.km+'</div><div class="l">km'+(race.block?' en total':'')+'</div></div><div class="stat"><div class="n ember">'+(race.block?semanasBloque(race).length:race.dplus)+'</div><div class="l">'+(race.block?'semanas':'metros +')+'</div></div><div class="stat">'+(function(){if(race.block){var L=getJ(K.log);var ses=race.days.filter(function(x){return !x.w&&x.isTraining;});var hh=ses.filter(function(x){return (L[x.iso]||{}).hecho;}).length;return '<div class="n">'+hh+'/'+ses.length+'</div><div class="l">entrenos</div>';}var R=getJ(KEYS(race.id).result);return daysLeft(race.date)<0&&R.tiempo?'<div class="n gold">'+esc(R.tiempo)+'</div><div class="l">tu tiempo</div>':'<div class="n">'+race.estimate+'</div><div class="l">objetivo</div>';})()+'</div></div>'+
+    '<div class="rhero">'+heroProfile(race.profile,'rhero-svg')+'<div class="rhero-fade"></div><div class="rhero-body"><div class="rhero-kick">'+(race.block?'Bloque &middot; plan de entrenamiento':(race.kind||'Trail')+(race.resultado?' &middot; carrera corrida':' &middot; plan de carrera'))+'</div><div class="rhero-title">'+(race.nameHTML||race.name)+'</div><div class="rhero-sub">'+race.subtitle+' &middot; <b>'+(race.block?'hasta '+fmtDate(race.date):fmtDate(race.date)+', '+race.time)+'</b></div></div></div>'+
+    '<div class="stats"><div class="stat"><div class="n ember">'+race.km+'</div><div class="l">km'+(race.block?' en total':'')+'</div></div><div class="stat"><div class="n ember">'+(race.block?semanasBloque(race).length:race.dplus)+'</div><div class="l">'+(race.block?'semanas':'metros +')+'</div></div><div class="stat">'+(function(){if(race.block){var L=getJ(K.log);var ses=race.days.filter(function(x){return !x.w&&x.isTraining;});var hh=ses.filter(function(x){return (L[x.iso]||{}).hecho;}).length;return '<div class="n">'+hh+'/'+ses.length+'</div><div class="l">entrenos</div>';}var R=resultOf(race.id)||{};return daysLeft(race.date)<=0&&R.tiempo?'<div class="n gold">'+esc(R.tiempo)+'</div><div class="l">tu tiempo</div>':'<div class="n">'+race.estimate+'</div><div class="l">objetivo</div>';})()+'</div></div>'+
     '<div class="content wrap">'+
     '<section class="panel" id="dias"><div><div><div class="legend" style="margin:2px 0 10px'+(race.block?';display:none':'')+'"><span><i class="dot hc"></i>Hidratos</span><span><i class="dot pr"></i>Proteína</span><span><i class="dot gr"></i>Grasa</span><span><i class="dot fi"></i>Fibra</span></div></div></div><div id="daylist"></div></section>'+
     '<section class="panel" id="mapa">'+(race.track&&race.track.length?'<p class="hint">Arrastra el dedo por el perfil.</p><div class="card route-card">'+routeSVG(race)+'</div><div class="scrub-card"><div id="scrub" class="scrub">'+scrubSVG(race)+'</div>'+
@@ -433,11 +433,11 @@ function renderRace(race,tab,focusIso,openLog){clearTimer();prep(race);tab=tab||
       '<div class="jumps">'+jumps.map(function(j){return '<button class="jbtn" data-jump="'+j[1]+'">'+j[0]+'</button>';}).join('')+'</div></div><p class="lead" style="font-size:12.5px">Paso previsto = tiempo de carrera acumulado según tus ritmos por tramo. Pendiente sobre ~250 m.</p>':
       '<div class="card" style="margin-top:14px;text-align:center"><div class="cc-h" style="justify-content:center">'+I.mapa+' Sin recorrido</div><p class="pf-note" style="margin:6px 0 14px">Carga el GPX de la carrera (lo suele publicar la organizacion, o de Wikiloc/Strava) y tendrás el trazado, el perfil interactivo y el tiempo del día D.</p><label class="btn primary" style="justify-content:center">'+I.up+' Cargar GPX<input type="file" id="gpx-race" accept=".gpx,.tcx,.xml" hidden></label></div>')+
       (race.custom&&race.track&&race.track.length?'<label class="btn wide-btn" style="justify-content:center;margin-top:6px">'+I.up+' Cambiar recorrido (GPX)<input type="file" id="gpx-race" accept=".gpx,.tcx,.xml" hidden></label>':'')+'</section>'+
-    '<section class="panel" id="ritmos"><div class="profile-card">'+buildProfileSVG(race.profile)+'</div>'+(race.readout?'<div class="card soft strat"><div class="cc-h">'+I.ritmos+' Estrategia</div><div class="readout" style="margin:4px 0 0">'+race.readout+'</div></div>':'')+'<div class="obj"><div class="t">Objetivo</div><div class="n"><b>'+race.objective+'</b></div><div class="s">'+race.objectiveNote+'</div></div>'+cardPrediccion(race)+(race.zones.length?'<div id="strip" class="strip"></div><div class="striplab"><span>km 0</span><span>km '+Math.round(race.totalKm/2)+'</span><span>km '+Math.round(race.totalKm)+'</span></div><div id="zones"></div><details class="fold"><summary>'+I.check+'<span>A vigilar</span></summary><div class="fold-in" id="warns"></div></details>'+(race.splits&&race.splits.length?'<details class="fold" open><summary>'+I.ritmos+'<span>Km a km &middot; qu&eacute; tienes por delante</span></summary><div class="fold-in" id="splitsbox"></div></details>':'') :'<div class="card"><p class="pf-note" style="margin:0">Esta carrera aún no tiene ritmos por tramo. Usa la calculadora de ritmos en Herramientas para fijar tu objetivo, o pidele a Claude un plan de ritmos con el recorrido.</p></div><div id="strip" hidden></div><div id="zones" hidden></div><div id="warns" hidden></div>')+(race.terrainNote?'<p class="hint">'+race.terrainNote+'</p>':'')+'</section>'+
-    '<section class="panel raceday" id="carrera"><div id="racemode"></div><div id="meteo"></div><div class="phase">Antes</div><div id="pre"></div><div class="tactic"><div class="th">Táctica ligada al perfil</div>'+race.raceDay.tactic+'</div><div class="phase">Durante ('+race.time+')</div><div id="dur"></div><div class="phase">Meta y recuperación</div><div id="post"></div>'+
-      '<details class="fold"'+(dl<=2&&dl>=0?' open':'')+'><summary>'+I.bag+'<span>Qué llevar</span></summary><div class="fold-in" id="gear"></div></details>'+
-      '<details class="fold" id="res-fold"'+(past?' open':'')+'><summary>'+I.trophy+'<span>Mi resultado</span></summary><div class="fold-in"><div class="card" style="margin:8px 0 0"><div class="lb-grid"><label>Tiempo<input type="text" id="r-t" value="'+esc(res?res.tiempo:'')+'" placeholder="h:mm:ss"></label><label>Puesto<input type="text" id="r-p" value="'+esc(res?res.puesto:'')+'" placeholder="2º / 15º cat"></label><label class="wide">Notas<input type="text" id="r-n" value="'+esc(res?res.notas:'')+'" placeholder="Como fue, sensaciones, que repetir..."></label></div><div class="lb-foot"><span class="lb-pace" id="r-pace">'+(res&&res.tiempo?fmtPace(parseTime(res.tiempo),race.totalKm):'')+'</span><button class="btn sm" id="r-share">'+I.share+'</button><button class="btn primary sm" id="r-save">Guardar</button></div></div></div></details>'+
-      (race.custom?'<button class="btn wide-btn danger-btn" id="race-del">Eliminar esta carrera</button>':'')+'<p class="foot">Cantidades para '+(P().peso||'tu peso')+'. Ajusta al hambre real.</p></section>'+
+    '<section class="panel" id="ritmos"><div class="profile-card">'+buildProfileSVG(race.profile)+'</div>'+(race.readout?'<div class="card soft strat"><div class="cc-h">'+I.ritmos+(race.resultado?' Análisis':' Estrategia')+'</div><div class="readout" style="margin:4px 0 0">'+race.readout+'</div></div>':'')+'<div class="obj"><div class="t">'+(race.resultado?'Resultado':'Objetivo')+'</div><div class="n"><b>'+race.objective+'</b></div><div class="s">'+race.objectiveNote+'</div></div>'+cardPrediccion(race)+(race.zones.length?'<div id="strip" class="strip"></div><div class="striplab"><span>km 0</span><span>km '+Math.round(race.totalKm/2)+'</span><span>km '+Math.round(race.totalKm)+'</span></div><div id="zones"></div><details class="fold"><summary>'+I.check+'<span>A vigilar</span></summary><div class="fold-in" id="warns"></div></details>'+(race.splits&&race.splits.length?'<details class="fold" open><summary>'+I.ritmos+'<span>'+(race.resultado?'Km a km &middot; c&oacute;mo fue':'Km a km &middot; qu&eacute; tienes por delante')+'</span></summary><div class="fold-in" id="splitsbox"></div></details>':'') :'<div class="card"><p class="pf-note" style="margin:0">Esta carrera aún no tiene ritmos por tramo. Usa la calculadora de ritmos en Herramientas para fijar tu objetivo, o pidele a Claude un plan de ritmos con el recorrido.</p></div><div id="strip" hidden></div><div id="zones" hidden></div><div id="warns" hidden></div>')+(race.terrainNote?'<p class="hint">'+race.terrainNote+'</p>':'')+'</section>'+
+    '<section class="panel raceday" id="carrera"><div id="racemode"></div><div'+(race.resultado?' hidden':'')+'><div id="meteo"></div><div class="phase">Antes</div><div id="pre"></div><div class="tactic"><div class="th">Táctica ligada al perfil</div>'+race.raceDay.tactic+'</div><div class="phase">Durante ('+race.time+')</div><div id="dur"></div><div class="phase">Meta y recuperación</div><div id="post"></div>'+
+      '<details class="fold"'+(dl<=2&&dl>=0?' open':'')+'><summary>'+I.bag+'<span>Qué llevar</span></summary><div class="fold-in" id="gear"></div></details></div>'+
+      '<details class="fold" id="res-fold"'+(past?' open':'')+'><summary>'+I.trophy+'<span>Mi resultado</span></summary><div class="fold-in"><div class="card" style="margin:8px 0 0"><div class="lb-grid"><label>Tiempo<input type="text" id="r-t" value="'+esc(res?res.tiempo:'')+'" placeholder="h:mm:ss"></label><label>Puesto<input type="text" id="r-p" value="'+esc(res?res.puesto:'')+'" placeholder="2º / 15º cat"></label><label class="wide">Notas<input type="text" id="r-n" value="'+esc(res?res.notas:'')+'" placeholder="Cómo fue, sensaciones, qué repetir..."></label></div><div class="lb-foot"><span class="lb-pace" id="r-pace">'+(res&&res.tiempo?fmtPace(parseTime(res.tiempo),race.totalKm):'')+'</span><button class="btn sm" id="r-share">'+I.share+'</button><button class="btn primary sm" id="r-save">Guardar</button></div><label class="btn wide-btn" style="margin-top:10px">'+I.up+' Importar GPX de la carrera<input type="file" id="r-gpx" accept=".gpx,.tcx,.xml,application/gpx+xml,text/xml" hidden></label><p class="pf-note" style="margin:6px 2px 0">Rellena el tiempo y te analiza la carrera: parciales, mitades, cadencia y potencia.</p></div><div id="r-anal">'+(res&&res.analisis?htmlAnalisis(res.analisis)+(res.analisis.splits&&res.analisis.splits.length?'<div class="card"><div class="cc-h">'+I.ritmos+' Parciales</div>'+splitsChart(res.analisis.splits)+'</div>':''):'')+'</div></div></details>'+
+      (race.custom?'<button class="btn wide-btn danger-btn" id="race-del">Eliminar esta carrera</button>':'')+(race.resultado?'':'<p class="foot">Cantidades para '+(P().peso||'tu peso')+'. Ajusta al hambre real.</p>')+'</section>'+
     '</div></div>';
   app().innerHTML=html;window.scrollTo(0,0);
 
@@ -482,9 +482,9 @@ function renderRace(race,tab,focusIso,openLog){clearTimer();prep(race);tab=tab||
   if(sbx&&race.splits&&race.splits.length){var acc=0;var fl=Math.floor(race.totalKm);var rows=race.splits.map(function(s){
     var c=MODE[s[4]]||MODE.steady;var kn=parseInt(s[0],10);var seg=kn<=fl?1:(race.totalKm-fl);acc+=paceMid(s[5])*seg;
     return '<div class="skm"><span class="skm-bar" style="background:'+c[0]+'"></span><span class="skm-k">km '+s[0]+'</span>'+
-      '<span class="skm-mid"><span class="skm-top"><span class="skm-ter" style="color:'+c[0]+'">'+c[1]+'</span><span class="skm-sub">'+s[1]+' / '+s[2]+' m &middot; '+s[3]+'</span></span><span class="skm-cue">'+s[6]+'</span></span>'+
+      '<span class="skm-mid"><span class="skm-top">'+(race.resultado?'':'<span class="skm-ter" style="color:'+c[0]+'">'+c[1]+'</span>')+'<span class="skm-sub">'+s[1]+' / '+s[2]+' m &middot; '+s[3]+'</span></span><span class="skm-cue">'+s[6]+'</span></span>'+
       '<span class="skm-r"><span class="skm-p">'+s[5]+'</span><span class="skm-e">paso '+fmtDur(acc)+'</span></span></div>';
-  }).join('');sbx.innerHTML='<div class="splits-km">'+rows+'</div><p class="hint" style="margin:8px 2px 0">"Paso" = tiempo acumulado estimado al acabar cada km, seg&uacute;n tus ritmos objetivo.</p>';}
+  }).join('');sbx.innerHTML='<div class="splits-km">'+rows+'</div><p class="hint" style="margin:8px 2px 0">'+(race.resultado?'Ritmo real de cada km y tiempo acumulado, sacados de tu GPX.':'"Paso" = tiempo acumulado estimado al acabar cada km, seg&uacute;n tus ritmos objetivo.')+'</p>';}
   var wc=document.getElementById('warns');race.warns.forEach(function(w,i){var el=document.createElement('div');el.className='check';el.style.cursor='default';el.innerHTML='<span class="num">'+(i+1)+'</span><span class="txt"><span class="t-what">'+w+'</span></span>';wc.appendChild(el);});
 
   /* carrera: checks, gear, result */
@@ -492,7 +492,12 @@ function renderRace(race,tab,focusIso,openLog){clearTimer();prep(race);tab=tab||
   fill('pre',race.raceDay.pre,'a');fill('dur',race.raceDay.dur,'b');fill('post',race.raceDay.post,'c');
   var gear=getJ(K.gear);var gl=document.getElementById('gear');(race.gear||DEFAULT_GEAR).forEach(function(g,i){var l=document.createElement('label');l.className='check';l.innerHTML='<input type="checkbox"'+(gear[i]?' checked':'')+'><span class="txt"><span class="t-what">'+g+'</span></span>';l.querySelector('input').addEventListener('change',function(e){gear[i]=e.target.checked;setJ(K.gear,gear);});gl.appendChild(l);});
   var rt=document.getElementById('r-t');rt.addEventListener('input',function(){document.getElementById('r-pace').textContent=fmtPace(parseTime(rt.value),race.totalKm);});
-  document.getElementById('r-save').addEventListener('click',function(){var R={tiempo:rt.value.trim(),puesto:document.getElementById('r-p').value.trim(),notas:document.getElementById('r-n').value.trim()};setJ(K.result,R);toast('Resultado guardado');var pill=document.querySelector('.cd-pill');if(pill&&R.tiempo&&past)pill.innerHTML=I.trophy+' '+esc(R.tiempo);});
+  var rg=document.getElementById('r-gpx');if(rg)rg.addEventListener('change',function(e){var f=e.target.files[0];if(!f)return;var rd=new FileReader();rd.onload=function(){try{var A=analyze(parseActivity(rd.result));
+      var prev=resultOf(race.id)||{};var R={tiempo:fmtDur(A.mov||A.sec),puesto:document.getElementById('r-p').value.trim()||prev.puesto||'',notas:document.getElementById('r-n').value.trim()||prev.notas||'',km:num(A.km),analisis:{km:A.km,mov:A.mov,halves:A.halves,cadAvg:A.cadAvg,pwAvg:A.pwAvg,hrAvg:A.hrAvg,insights:A.insights,splits:A.splits}};
+      setJ(K.result,R);rt.value=R.tiempo;rt.dispatchEvent(new Event('input'));
+      document.getElementById('r-anal').innerHTML=htmlAnalisis(R.analisis)+(A.splits.length?'<div class="card"><div class="cc-h">'+I.ritmos+' Parciales</div>'+splitsChart(A.splits)+'</div>':'');
+      toast('Carrera analizada: '+num(A.km)+' km en '+R.tiempo);}catch(err){toast('No he podido leerlo: '+err.message);}};rd.readAsText(f);});
+  document.getElementById('r-save').addEventListener('click',function(){var old=getJ(K.result);var R={tiempo:rt.value.trim(),puesto:document.getElementById('r-p').value.trim(),notas:document.getElementById('r-n').value.trim()};if(old.analisis)R.analisis=old.analisis;if(old.km)R.km=old.km;setJ(K.result,R);toast('Resultado guardado');var pill=document.querySelector('.cd-pill');if(pill&&R.tiempo&&past)pill.innerHTML=I.trophy+' '+esc(R.tiempo);});
   document.getElementById('r-share').addEventListener('click',function(){var R=getJ(K.result);share(race.name,race.name+' ('+race.dist+' / '+race.gain+'): '+(R.tiempo||rt.value||'-')+(R.puesto?', puesto '+R.puesto:'')+'.');});
   if(past){var rf=document.getElementById('res-fold'),cp=document.getElementById('carrera');if(rf&&cp)cp.insertBefore(rf,cp.firstChild);}
   renderRaceMode(race);try{cargarTiempo(race);}catch(e){}
@@ -503,6 +508,7 @@ function renderRace(race,tab,focusIso,openLog){clearTimer();prep(race);tab=tab||
   /* tabs */
   var TABS=['dias','mapa','ritmos','carrera'];
   var RACE_TABS=[{key:'dias',icon:I.dias,label:'Plan'},{key:'mapa',icon:I.mapa,label:'Recorrido'},{key:'ritmos',icon:I.ritmos,label:'Ritmos'},{key:'carrera',icon:I.carrera,label:'Día D'}];
+  if(!race.block&&!race.days.length){TABS=TABS.filter(function(k){return k!=='dias';});RACE_TABS=RACE_TABS.filter(function(t){return t.key!=='dias';});RACE_TABS[RACE_TABS.length-1].label='Resultado';if(tab==='dias')tab='ritmos';}
   var panels={dias:document.getElementById('dias'),mapa:document.getElementById('mapa'),ritmos:document.getElementById('ritmos'),carrera:document.getElementById('carrera')};var scrubInit=false;var curTab=null;
   window.switchTab=function(name,noScroll){if(name===curTab&&!noScroll)return;
     var dir=(curTab==null)?0:(TABS.indexOf(name)>TABS.indexOf(curTab)?1:-1);curTab=name;
@@ -517,7 +523,7 @@ function renderRace(race,tab,focusIso,openLog){clearTimer();prep(race);tab=tab||
   initSwipe(document.querySelector('.content'),function(d){var i=TABS.indexOf(curTab)+d;if(i<0||i>=TABS.length){placeIndicator();return;}switchTab(TABS[i]);},TABS.length);}
   (function(){var t=todayISO();var td=race.days.filter(function(x){return !x.w&&x.iso===t;})[0];
     var pend=false;if(td&&td.menu){var m=getJ(K.meals)[t]||{};pend=Object.keys(m).filter(function(k){return m[k];}).length<td.menu.length;}
-    navDot('dias',pend);navDot('carrera',daysLeft(race.date)===0);})();
+    navDot('dias',pend);navDot('carrera',daysLeft(race.date)===0&&!resultOf(race.id));})();
   /* iOS-style top bar on scroll */
   (function(){var tb=document.getElementById('topbar');if(!tb)return;var f=false;
     window.addEventListener('scroll',function(){var s=window.scrollY>170;if(s!==f){f=s;tb.classList.toggle('show',s);}},{passive:true});})();
@@ -577,6 +583,7 @@ function renderRaceMode(race){var box=document.getElementById('racemode');if(!bo
       var _st=document.getElementById('rm-simple');if(_st)_st.onclick=function(){ui.rmSimple=!simple;setJ('ui',ui);draw();};
       return;}
     if(RM.startTs&&RM.endTs){box.innerHTML='<div class="rm"><div class="rm-h">'+I.trophy+' CARRERA TERMINADA</div><div class="rm-big">'+fmtDur((RM.endTs-RM.startTs)/1000)+'</div><div class="pf-note">Tiempo del cronometro. Guárdalo abajo en "Mi resultado" con tu puesto.</div><div class="td-actions"><button class="btn" id="rm-reset">Reiniciar cronometro</button></div></div>';document.getElementById('rm-reset').onclick=function(){if(!confirm('Reiniciar?'))return;RM={};setJ(K.race,RM);draw();};return;}
+    if(dl===0&&resultOf(race.id)){box.innerHTML='';return;}
     if(dl===0){var s=(startAt-now)/1000;box.innerHTML='<div class="rm live"><div class="rm-h">'+I.carrera+' HOY ES EL DÍA</div><div class="rm-big">'+(s>0?fmtDur(s):'0:00')+'</div><div class="pf-note" style="text-align:center">'+(s>0?'para la salida de las '+race.time:'Ya deberias estar corriendo')+'</div><div class="td-actions" style="justify-content:center"><button class="btn primary" id="rm-start">'+I.timer+' Salgo</button></div><p class="pf-note" style="text-align:center;margin-top:8px">Al pulsar te pedira el GPS para el km real y los avisos del muro y las bajadas.</p></div>';document.getElementById('rm-start').onclick=function(){RM={startTs:Date.now()};setJ(K.race,RM);_rmMode=null;rmStartGPS(race);rmWake(true);clearTimer();_timer=setInterval(draw,1000);draw();};return;}
     if(dl>0){box.innerHTML='<div class="rm"><div class="rm-h">'+I.timer+' CUENTA ATRÁS</div><div class="rm-big">'+dl+'<small> días</small></div><div class="pf-note" style="text-align:center">'+fmtDate(race.date)+' a las '+race.time+'. El día D aquí tendrás el modo carrera con GPS, avisos y lo que viene.</div></div>';return;}
     box.innerHTML='';}
@@ -651,7 +658,7 @@ function renderOnboarding(){clearTimer();var p=P();
 function slug(t){return String(t).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');}
 function perfilPlano(totalKm){var W=1000,H=300,bot=270,top=24;var pts=[];for(var i=0;i<=40;i++){var x=i/40*W;var y=bot-40-Math.sin(i/40*Math.PI*3)*6;pts.push(x.toFixed(1)+','+y.toFixed(1));}
   return {viewBox:[0,0,W,H],line:'M '+pts.join(' L '),area:'M 0,'+bot+' L '+pts.join(' L ')+' L '+W+','+bot+' Z',bot:bot,top:top,minEle:0,maxEle:100,ticks:[[0,'0'],[W/2,String(Math.round(totalKm/2))],[W,String(Math.round(totalKm))]]};}
-function cdLabel(r,res){var n=daysLeft(r.date);if(n<0)return r.block?'completado':(res?I.trophy+' '+esc(res.tiempo):'hecha');if(r.block)return n===0?'último día':n===1?'termina mañana':'quedan '+n+' días';return n===0?'HOY':n===1?'Mañana':'faltan '+n+' días';}
+function cdLabel(r,res){var n=daysLeft(r.date);if(n===0&&res&&!r.block)return I.trophy+' '+esc(res.tiempo);if(n<0)return r.block?'completado':(res?I.trophy+' '+esc(res.tiempo):'hecha');if(r.block)return n===0?'último día':n===1?'termina mañana':'quedan '+n+' días';return n===0?'HOY':n===1?'Mañana':'faltan '+n+' días';}
 function semanasBloque(r){var out=[],cur=null;(r.days||[]).forEach(function(x){if(x.w){cur={label:x.w,km:0};out.push(cur);return;}if(cur)cur.km+=parseKm(x.ent)||0;});return out;}
 function perfilVolumen(r){var W=1000,H=300,bot=270,top=125;var S=semanasBloque(r);var mx=Math.max.apply(null,S.map(function(w){return w.km;}).concat([1]));var n=S.length||1;var pts=[];
   S.forEach(function(w,i){var y=bot-(w.km/mx)*(bot-top);var x0=i/n*W,x1=(i+1)/n*W;pts.push(x0.toFixed(1)+','+y.toFixed(1));pts.push(x1.toFixed(1)+','+y.toFixed(1));});
@@ -821,24 +828,26 @@ function parseActivity(text){
   if(tp.length){ /* GPX */
     tp.forEach(function(p){var la=parseFloat(p.getAttribute('lat')),lo=parseFloat(p.getAttribute('lon'));
       if(isNaN(la)||isNaN(lo))return;
-      var hrEl=firstLocal(p,'hr');
-      pts.push({lat:la,lon:lo,ele:parseFloat(txt(firstLocal(p,'ele'))),t:Date.parse(txt(firstLocal(p,'time'))||''),hr:hrEl?parseInt(txt(hrEl),10):null,d:null});});
+      var hrEl=firstLocal(p,'hr'),cdEl=firstLocal(p,'cad'),pwEl=firstLocal(p,'power');
+      pts.push({lat:la,lon:lo,ele:parseFloat(txt(firstLocal(p,'ele'))),t:Date.parse(txt(firstLocal(p,'time'))||''),hr:hrEl?parseInt(txt(hrEl),10):null,cad:cdEl?parseInt(txt(cdEl),10):null,pw:pwEl?parseInt(txt(pwEl),10):null,d:null});});
   }else{ /* TCX */
     tagsLocal(doc,'Trackpoint').forEach(function(p){
       var pos=firstLocal(p,'Position');var la=pos?parseFloat(txt(firstLocal(pos,'LatitudeDegrees'))):NaN,lo=pos?parseFloat(txt(firstLocal(pos,'LongitudeDegrees'))):NaN;
-      var hrEl=firstLocal(p,'HeartRateBpm');var dm=txt(firstLocal(p,'DistanceMeters'));
+      var hrEl=firstLocal(p,'HeartRateBpm');var dm=txt(firstLocal(p,'DistanceMeters'));var cdEl=firstLocal(p,'RunCadence')||firstLocal(p,'Cadence');var pwEl=firstLocal(p,'Watts');
       pts.push({lat:isNaN(la)?null:la,lon:isNaN(lo)?null:lo,ele:parseFloat(txt(firstLocal(p,'AltitudeMeters'))),
-        t:Date.parse(txt(firstLocal(p,'Time'))||''),hr:hrEl?parseInt(txt(firstLocal(hrEl,'Value')),10):null,d:dm?parseFloat(dm):null});});
+        t:Date.parse(txt(firstLocal(p,'Time'))||''),hr:hrEl?parseInt(txt(firstLocal(hrEl,'Value')),10):null,cad:cdEl?parseInt(txt(cdEl),10):null,pw:pwEl?parseInt(txt(pwEl),10):null,d:dm?parseFloat(dm):null});});
   }
   pts=pts.filter(function(p){return p.t&&!isNaN(p.t);});
   if(pts.length<2)throw new Error('El archivo no tiene puntos con hora');
   return pts;}
 function analyze(pts){
   var hasPos=pts.some(function(p){return p.lat!=null;});
+  /* suavizado: el GPS tiembla punto a punto y, sumado, infla la distancia */
+  var SP=pts.map(function(p,i){if(p.lat==null)return p;var la=0,lo=0,n=0;for(var j=Math.max(0,i-4);j<=Math.min(pts.length-1,i+4);j++){if(pts[j].lat!=null){la+=pts[j].lat;lo+=pts[j].lon;n++;}}return {lat:la/n,lon:lo/n};});
   var cum=[0];
   for(var i=1;i<pts.length;i++){var d;
     if(pts[i].d!=null&&pts[i-1].d!=null)d=Math.max(0,pts[i].d-pts[i-1].d);
-    else if(hasPos&&pts[i].lat!=null&&pts[i-1].lat!=null)d=hav(pts[i-1],pts[i]);else d=0;
+    else if(hasPos&&pts[i].lat!=null&&pts[i-1].lat!=null)d=hav(SP[i-1],SP[i]);else d=0;
     if(d>200)d=0; cum.push(cum[i-1]+d);}
   var total=cum[cum.length-1];
   var sec=Math.round((pts[pts.length-1].t-pts[0].t)/1000);
@@ -851,20 +860,54 @@ function analyze(pts){
   var gain=null;
   if(eles.length>5){var w=6,sm=[];for(i=0;i<eles.length;i++){var lo2=Math.max(0,i-w),hi=Math.min(eles.length,i+w+1);var sl=eles.slice(lo2,hi);sm.push(sl.reduce(function(a,b){return a+b;},0)/sl.length);}
     gain=0;for(i=1;i<sm.length;i++){var dd=sm[i]-sm[i-1];if(dd>0)gain+=dd;}gain=Math.round(gain);}
+  /* tiempo en movimiento acumulado (las pausas largas no cuentan) */
+  var mt=[0];for(i=1;i<pts.length;i++){var dt2=(pts[i].t-pts[i-1].t)/1000;mt.push(mt[i-1]+(dt2>0&&dt2<25?dt2:0));}
+  function avgOf(a){a=a.filter(function(v){return v!=null&&!isNaN(v)&&v>0;});return a.length?a.reduce(function(x,y){return x+y;},0)/a.length:null;}
+  var cadRaw=avgOf(pts.map(function(p){return p.cad;}));var cadK=cadRaw&&cadRaw<120?2:1; /* algunos relojes dan pasos de un pie */
   /* parciales por km */
-  var splits=[],nextKm=1000,lastT=pts[0].t,acc=[],hrAcc=[];
-  for(i=1;i<pts.length;i++){if(pts[i].hr)hrAcc.push(pts[i].hr);
+  var splits=[],nextKm=1000,lastM=0,lastE=pts[0].ele,acc={hr:[],cad:[],pw:[]};
+  for(i=1;i<pts.length;i++){var dti=(pts[i].t-pts[i-1].t)/1000;if(dti>0&&dti<25){if(pts[i].hr)acc.hr.push(pts[i].hr);if(pts[i].cad)acc.cad.push(pts[i].cad*cadK);if(pts[i].pw)acc.pw.push(pts[i].pw);}
     while(cum[i]>=nextKm&&nextKm<=total){var frac=(nextKm-cum[i-1])/((cum[i]-cum[i-1])||1);
-      var tAt=pts[i-1].t+(pts[i].t-pts[i-1].t)*frac;
-      splits.push({k:Math.round(nextKm/1000),sec:Math.round((tAt-lastT)/1000),hr:hrAcc.length?Math.round(hrAcc.reduce(function(a,b){return a+b;},0)/hrAcc.length):null});
-      lastT=tAt;hrAcc=[];nextKm+=1000;}}
+      var mAt=mt[i-1]+(mt[i]-mt[i-1])*frac;var eAt=(pts[i-1].ele!=null&&!isNaN(pts[i-1].ele))?pts[i-1].ele+((pts[i].ele||pts[i-1].ele)-pts[i-1].ele)*frac:null;
+      var ah=avgOf(acc.hr),ac=avgOf(acc.cad),ap=avgOf(acc.pw);
+      splits.push({k:Math.round(nextKm/1000),sec:Math.round(mAt-lastM),hr:ah?Math.round(ah):null,cad:ac?Math.round(ac):null,pw:ap?Math.round(ap):null,de:(eAt!=null&&lastE!=null&&!isNaN(lastE))?Math.round(eAt-lastE)||0:null});
+      lastM=mAt;lastE=eAt;acc={hr:[],cad:[],pw:[]};nextKm+=1000;}}
   var restM=total-(splits.length*1000);
-  if(restM>150)splits.push({k:+(total/1000).toFixed(2),sec:Math.round((pts[pts.length-1].t-lastT)/1000),hr:hrAcc.length?Math.round(hrAcc.reduce(function(a,b){return a+b;},0)/hrAcc.length):null,part:true});
+  if(restM>150){var ah2=avgOf(acc.hr),ac2=avgOf(acc.cad),ap2=avgOf(acc.pw);splits.push({k:+(total/1000).toFixed(2),sec:Math.round(mt[mt.length-1]-lastM),m:Math.round(restM),hr:ah2?Math.round(ah2):null,cad:ac2?Math.round(ac2):null,pw:ap2?Math.round(ap2):null,part:true});}
+  /* mitades */
+  var halves=null;if(total>2000){var hm=total/2;for(i=1;i<cum.length;i++){if(cum[i]>=hm){var fr=(hm-cum[i-1])/((cum[i]-cum[i-1])||1);var h1=mt[i-1]+(mt[i]-mt[i-1])*fr;halves=[Math.round(h1),Math.round(mt[mt.length-1]-h1)];break;}}}
+  var cadAvg=cadRaw?Math.round(cadRaw*cadK):null,pwAvg=avgOf(pts.map(function(p){return p.pw;}));pwAvg=pwAvg?Math.round(pwAvg):null;
   var route=[];
   if(hasPos){var ok=pts.filter(function(p){return p.lat!=null;});var N=Math.min(140,ok.length);
     for(i=0;i<N;i++){var q=ok[Math.floor(i/(N-1||1)*(ok.length-1))];route.push([+q.lat.toFixed(5),+q.lon.toFixed(5)]);}}
-  return {km:+(total/1000).toFixed(2),sec:sec,mov:Math.round(mov),hrAvg:hrAvg,hrMax:hrMax,gain:gain,splits:splits,route:route,
-    date:toISO(new Date(pts[0].t)),hora:new Date(pts[0].t).toTimeString().slice(0,5),n:pts.length};}
+  var A={km:+(total/1000).toFixed(2),sec:sec,mov:Math.round(mov),hrAvg:hrAvg,hrMax:hrMax,gain:gain,splits:splits,route:route,halves:halves,cadAvg:cadAvg,pwAvg:pwAvg,
+    date:toISO(new Date(pts[0].t)),hora:new Date(pts[0].t).toTimeString().slice(0,5),n:pts.length};
+  A.insights=insightsActividad(A);return A;}
+/* ---------- análisis automático de una actividad ---------- */
+function insightsActividad(A){var out=[];var full=(A.splits||[]).filter(function(x){return !x.part;});
+  var T=A.mov||A.sec;if(!A.km||A.km<3||full.length<3||!T)return out;
+  var avg=T/A.km;var f=function(x){return fmtPace(x,1).replace(' /km','');};
+  var k1=full[0];
+  if(k1.sec<avg-8)out.push({t:'warn',x:'Saliste rápido: el km 1 fue a '+f(k1.sec)+', '+Math.round(avg-k1.sec)+' s por debajo de tu media ('+f(avg)+')'+(k1.de!=null&&k1.de<=-8?', con '+(-k1.de)+' m de bajada a favor':'')+'.'});
+  if(A.halves){var d=A.halves[1]-A.halves[0],pc=d/A.halves[0]*100;
+    if(pc>2)out.push({t:'warn',x:'La segunda mitad fue '+fmtDur(d)+' más lenta que la primera ('+fmtDur(A.halves[1])+' frente a '+fmtDur(A.halves[0])+').'});
+    else if(pc<-1)out.push({t:'ok',x:'Negative split: acabaste más fuerte, la segunda mitad fue '+fmtDur(-d)+' más rápida.'});
+    else out.push({t:'ok',x:'Ritmo muy regular: las dos mitades casi iguales ('+fmtDur(A.halves[0])+' y '+fmtDur(A.halves[1])+').'});}
+  var best3=Math.min.apply(null,full.slice(0,3).map(function(x){return x.sec;}));var last=full[full.length-1];
+  if(full.length>=5&&last.sec-best3>=10)out.push({t:'warn',x:'El ritmo fue cayendo de '+f(best3)+' a '+f(last.sec)+' en el último km completo.'});
+  function tercio(key,first){var n=Math.max(1,Math.floor(full.length/3));var seg=first?full.slice(0,n):full.slice(-n);var v=seg.map(function(x){return x[key];}).filter(function(v){return v;});return v.length?v.reduce(function(a,b){return a+b;},0)/v.length:null;}
+  var c1=tercio('cad',true),c2=tercio('cad',false);if(c1&&c2&&c1-c2>=5)out.push({t:'info',x:'La cadencia bajó de '+Math.round(c1)+' a '+Math.round(c2)+' pasos/min: señal de cansancio en las piernas.'});
+  var p1=tercio('pw',true),p2=tercio('pw',false);if(p1&&p2&&(p1-p2)/p1>=0.05)out.push({t:'info',x:'La potencia cayó de '+Math.round(p1)+' a '+Math.round(p2)+' W.'});
+  var h1=tercio('hr',true),h2=tercio('hr',false);if(h1&&h2&&h2-h1>=8)out.push({t:'info',x:'Las pulsaciones subieron de '+Math.round(h1)+' a '+Math.round(h2)+' ppm del principio al final.'});
+  var secs=full.map(function(x){return x.sec;});var m=secs.reduce(function(a,b){return a+b;},0)/secs.length;var sd=Math.sqrt(secs.reduce(function(a,b){return a+(b-m)*(b-m);},0)/secs.length);
+  if(!out.some(function(o){return o.t==='warn';})&&sd/m<0.025)out.push({t:'ok',x:'Muy constante: tus parciales apenas varían.'});
+  return out;}
+function htmlAnalisis(A){if(!A)return '';var ins=A.insights||[];
+  var tiles=(A.halves?'<div><span class="ok2">1ª mitad</span><b>'+fmtDur(A.halves[0])+'</b></div><div><span class="ok2">2ª mitad</span><b>'+fmtDur(A.halves[1])+'</b></div>':'')+
+    (A.cadAvg?'<div><span class="ok2">cadencia</span><b>'+A.cadAvg+'<small> ppm</small></b></div>':'')+(A.pwAvg?'<div><span class="ok2">potencia</span><b>'+A.pwAvg+'<small> W</small></b></div>':'');
+  if(!ins.length&&!tiles)return '';
+  return '<div class="card analisis"><div class="cc-h">'+I.ritmos+' Análisis</div>'+(tiles?'<div class="imp-grid">'+tiles+'</div>':'')+
+    (ins.length?'<ul class="ins">'+ins.map(function(o){return '<li class="'+o.t+'">'+esc(o.x)+'</li>';}).join('')+'</ul>':'')+'</div>';}
 function routeMini(route){
   if(!route||route.length<2)return '';
   var lat0=route[0][0]*Math.PI/180,cx=Math.cos(lat0);
@@ -879,13 +922,13 @@ function splitsChart(sp){
   var paces=sp.map(function(x){return x.sec;});var mx=Math.max.apply(null,paces),mn=Math.min.apply(null,paces);
   return '<div class="splits">'+sp.map(function(x){
     var w=mx>mn?18+(x.sec-mn)/(mx-mn)*72:60;
-    return '<div class="sp"><span class="sk">'+(x.part?'\u21b3':'km '+x.k)+'</span><span class="sb"><i style="width:'+w.toFixed(0)+'%"></i></span><span class="sv">'+fmtPace(x.sec,x.part?1:1).replace(' /km','')+'</span>'+(x.hr?'<span class="sh">'+x.hr+'</span>':'')+'</div>';}).join('')+'</div>';}
+    return '<div class="sp"><span class="sk">'+(x.part?'\u21b3':'km '+x.k)+'</span><span class="sb"><i style="width:'+w.toFixed(0)+'%"></i></span><span class="sv">'+fmtPace(x.sec,x.part&&x.m?x.m/1000:1).replace(' /km','')+'</span>'+(x.hr?'<span class="sh">'+x.hr+'</span>':'')+'</div>';}).join('')+'</div>';}
 var IMP=null;
 function renderImport(preIso){clearTimer();var race=featuredRace();if(race)prep(race);
   var html='<div class="view"><header class="home-head"><div class="kicker">Registro automático</div><h1>Importar <span class="devil">entreno</span></h1><div class="meta">GPX o TCX de Strava, Runna, Garmin, Polar...</div></header><div class="wrap content">'+
    '<label class="dropzone" id="dz">'+I.up+'<span class="dz-t">Elegir archivo</span><span class="dz-s">.gpx o .tcx</span><input type="file" id="file" accept=".gpx,.tcx,.xml,application/gpx+xml,text/xml" hidden></label>'+
    '<div id="impout"></div>'+
-   '<details class="prefs" style="margin-top:12px"><summary>Como saco el archivo</summary><div class="prefs-in">'+
+   '<details class="prefs" style="margin-top:12px"><summary>Cómo saco el archivo</summary><div class="prefs-in">'+
    '<p class="pf-note" style="margin:0 0 8px"><b>Desde Runna:</b> el entreno se sincroniza solo con Strava (Ajustes &rarr; Conexiones).</p>'+
    '<p class="pf-note" style="margin:0 0 8px"><b>Desde Strava (móvil):</b> abre la actividad &rarr; los tres puntos &rarr; <b>Exportar GPX</b>. Guárdalo en Archivos y elígelo aquí.</p>'+
    '<p class="pf-note" style="margin:0"><b>Con el Polar H10:</b> si grabas con el pulsometro emparejado, el archivo trae las pulsaciones y las veras aquí (media, máxima y por kilometro). El TCX de Strava las conserva mejor que el GPX.</p>'+
@@ -912,7 +955,7 @@ function renderImport(preIso){clearTimer();var race=featuredRace();if(race)prep(
       (A.hrAvg?'<div><span class="ok2">FC media</span><b class="hr">'+A.hrAvg+'<small> ppm</small></b></div>':'')+
       (A.hrMax?'<div><span class="ok2">FC máxima</span><b class="hr">'+A.hrMax+'<small> ppm</small></b></div>':'')+
       '</div>'+routeMini(A.route)+
-      (A.splits.length?'<div class="cc-h" style="margin-top:12px">'+I.ritmos+' Parciales'+(A.hrAvg?' <span>ritmo / ppm</span>':'')+'</div>'+splitsChart(A.splits):'')+
+      (A.splits.length?'<div class="cc-h" style="margin-top:12px">'+I.ritmos+' Parciales'+(A.hrAvg?' <span>ritmo / ppm</span>':'')+'</div>'+splitsChart(A.splits):'')+'</div>'+htmlAnalisis(A)+'<div class="card">'+
       '<div class="imp-save"><label class="imp-day"><span class="pf-h">GUARDAR EN</span><select id="impday">'+(opts||'<option>Sin plan</option>')+'</select></label>'+
       '<button class="btn primary" id="impsave">Guardar entreno</button></div>'+
       '<p class="pf-note">Detectado el '+fmtDate(A.date)+' a las '+A.hora+' &middot; '+A.n+' puntos'+(A.hrAvg?' &middot; con pulsometro':'')+'</p></div>';
@@ -920,7 +963,7 @@ function renderImport(preIso){clearTimer();var race=featuredRace();if(race)prep(
     if(sv)sv.addEventListener('click',function(){if(!race)return;var iso=document.getElementById('impday').value;
       var L=getJ(KEYS(race.id).log);var prev=L[iso]||{};
       L[iso]={km:num(A.km),tiempo:fmtDur(A.mov||A.sec),notas:prev.notas||'',hecho:true,
-        hrAvg:A.hrAvg,hrMax:A.hrMax,gain:A.gain,splits:A.splits,route:A.route,src:'import'};
+        hrAvg:A.hrAvg,hrMax:A.hrMax,gain:A.gain,splits:A.splits,route:A.route,halves:A.halves,cadAvg:A.cadAvg,pwAvg:A.pwAvg,insights:A.insights,src:'import'};
       setJ(KEYS(race.id).log,L);toast('Entreno guardado en '+fmtShort(iso));
       setTimeout(function(){location.hash='#/progreso';},700);});}
   if(preIso)toast('Elige el archivo del '+fmtShort(preIso));}
@@ -1055,22 +1098,40 @@ function planoEquivalente(km,sec,gain,trail){var g=gain||0;var up=trail?1.6:0.9,
 function marcasBase(diasAtras){var out=[];var lim=addDays(todayISO(),-(diasAtras||42));
   window.RACES.forEach(function(r){prep(r);var L=getJ(KEYS(r.id).log);Object.keys(L).forEach(function(iso){var l=L[iso];if(iso<lim||!l.hecho)return;var km=parseFloat(String(l.km||'').replace(',','.'));var sec=parseTime(l.tiempo);if(km>=5&&sec>0)out.push({km:km,sec:sec,iso:iso,gain:l.gain||0,hr:l.hrAvg||null,ent:(r.days.filter(function(x){return x.iso===iso;})[0]||{}).ent||''});});});
   return out;}
-function prediccion(race){prep(race);var M=marcasBase(42);if(!M.length)return null;
-  var trail=(race.kind||'Trail')==='Trail';var gain=parseInt(String(race.dplus||'0').replace('+',''),10)||0;
-  /* mejor ritmo plano-equivalente de cada entreno, proyectado a la distancia de carrera */
-  var cand=M.map(function(m){var flat=planoEquivalente(m.km,m.sec,m.gain,m.gain>150);var proy=riegel(flat,m.km,race.totalKm);return {m:m,flat:flat,proy:proy};}).sort(function(a,b){return a.proy-b.proy;});
-  var best=cand[0];var top=cand.slice(0,3);var mediaProy=top.reduce(function(a,c){return a+c.proy;},0)/top.length;
+function marcasCarrera(race){var lim=addDays(todayISO(),-200);var hoy=todayISO();
+  return palItems().filter(function(x){return x._s&&x._km>=3&&x.fecha>=lim&&x.fecha<=hoy&&x.fecha<race.date&&x.raceId!==race.id;});}
+function prediccion(race){prep(race);var M=marcasBase(42);var C=marcasCarrera(race);if(!M.length&&!C.length)return null;
+  var trail=(race.kind||'Trail')==='Trail';var gain=parseInt(String(race.dplus||'0').replace('+',''),10)||0;var tk=race.totalKm;
   var coste=gain*(trail?1.6:0.9)+gain*(trail?0.3:0.15);
-  var mid=mediaProy+coste;
-  return {mid:mid,low:mid*0.96,high:mid*1.05,best:best.m,n:M.length,coste:coste,flatPace:best.flat/best.m.km};}
-function cardPrediccion(race){var Pd=prediccion(race);if(!Pd)return '<div class="card soft"><div class="cc-h">'+I.ritmos+' Predicción del día D</div><p class="pf-note" style="margin:0">Registra o importa entrenos de 5 km o más y te calculo un tiempo previsto para '+esc(race.name)+'.</p></div>';
-  var obj=race._planTotal||0;var dif=obj?Math.round((Pd.mid-obj)/60):null;
-  return '<div class="card pred"><div class="cc-h">'+I.ritmos+' Predicción del día D <span>'+Pd.n+' entrenos</span></div>'+
+  /* 1) según tus entrenos: mejor ritmo plano-equivalente proyectado (Riegel) + coste del desnivel */
+  var tr=null;if(M.length){var cand=M.map(function(m){var flat=planoEquivalente(m.km,m.sec,m.gain,m.gain>150);return {m:m,flat:flat,proy:riegel(flat,m.km,tk)};}).sort(function(a,b){return a.proy-b.proy;});
+    var top=cand.slice(0,3);tr={mid:top.reduce(function(a,c){return a+c.proy;},0)/top.length+coste,best:cand[0].m,flatPace:cand[0].flat/cand[0].m.km};}
+  /* 2) según tus carreras: lo más fiable. Trail se compara con trail (ritmo esfuerzo); asfalto con asfalto (Riegel) */
+  var ca=null;if(C.length){var same=C.filter(function(x){return trail?x.tipo==='trail':x.tipo!=='trail';});
+    var pc=(same.length?same:C).map(function(x){var p;
+      if(trail&&x.tipo==='trail'){var eqR=x._km+x._d/100,eqT=tk+gain/100;p=x._s/eqR*eqT*Math.pow(eqT/eqR,0.06);}
+      else{var base=planoEquivalente(x._km,x._s,x._d,x.tipo==='trail');p=riegel(base,x._km,tk)+coste;}
+      var dias=Math.max(0,(Date.parse(todayISO())-Date.parse(x.fecha))/864e5);
+      var eqR=x._km+x._d/100,eqT=tk+gain/100,dpkR=x._d/x._km,dpkT=gain/tk;
+      var w=Math.exp(-Math.abs(Math.log(eqT/eqR))*2.5)*Math.exp(-Math.abs(dpkT-dpkR)/40)*(dias>120?0.5:1);
+      return {x:x,p:p,w:w,mismo:same.length>0};});
+    var sw=pc.reduce(function(a,c){return a+c.w;},0);var pm=pc.reduce(function(a,c){return a+c.p*c.w;},0)/sw;
+    pc.sort(function(a,b){return b.w-a.w;});ca={x:pc[0].x,p:pm,mismo:pc[0].mismo,n:pc.length};}
+  var mid,src;
+  if(ca){mid=ca.p;src='carrera';if(tr&&tr.mid<ca.p*0.97){mid=ca.p*0.75+tr.mid*0.25;src='mixto';}}
+  else{mid=tr.mid;src='entrenos';}
+  return {mid:mid,low:mid*0.97,high:mid*1.04,src:src,carrera:ca?ca.x:null,carreraProy:ca?ca.p:null,nCar:ca?ca.n:0,mismoTipo:ca?ca.mismo:false,
+    best:tr?tr.best:null,entrenosProy:tr?tr.mid:null,flatPace:tr?tr.flatPace:null,n:M.length,coste:coste};}
+function cardPrediccion(race){var Pd=prediccion(race);if(!Pd)return '<div class="card soft"><div class="cc-h">'+I.ritmos+' Predicción del día D</div><p class="pf-note" style="margin:0">Registra entrenos de 5 km o más, o añade carreras a tu palmarés, y te calculo un tiempo previsto para '+esc(race.name)+'.</p></div>';
+  var obj=race._planTotal||0;var dif=obj?Math.round((Pd.mid-obj)/60):null;var x=Pd.carrera;
+  return '<div class="card pred"><div class="cc-h">'+I.ritmos+' Predicción del día D <span>'+(x?'según tus carreras':Pd.n+' entrenos')+'</span></div>'+
     '<div class="pred-big">'+fmtDur(Pd.low)+' <small>a</small> '+fmtDur(Pd.high)+'</div><div class="pred-mid">estimación central <b>'+fmtDur(Pd.mid)+'</b> &middot; '+fmtPace(Pd.mid,race.totalKm)+'</div>'+
-    '<div class="pred-rows flat"><div><span>Tu mejor referencia</span><b>'+num(Pd.best.km)+' km en '+fmtDur(Pd.best.sec)+'</b><small>'+fmtShort(Pd.best.iso)+(Pd.best.ent?' &middot; '+esc(Pd.best.ent):'')+'</small></div>'+
-    '<div><span>Ritmo plano equivalente</span><b>'+fmtPace(Pd.flatPace,1)+'</b></div><div><span>Coste del desnivel ('+race.gain+')</span><b>+'+Math.round(Pd.coste/60)+' min</b></div>'+
+    '<div class="pred-rows flat">'+
+    (x?'<div><span>'+(Pd.nCar>1?'Tu carrera más parecida':'Tu carrera de referencia')+'</span><b>'+esc(x.nombre)+'</b><small>'+fmtShort(x.fecha)+' &middot; '+num(x._km)+' km en '+esc(x.tiempo)+(x._d?' &middot; +'+Math.round(x._d)+' m':'')+(Pd.nCar>1?' &middot; cuenta junto a '+(Pd.nCar-1)+(Pd.nCar===2?' carrera más':' carreras más'):'')+'</small></div>':'')+
+    (Pd.best?'<div><span>Según tus entrenos</span><b>'+fmtDur(Pd.entrenosProy)+'</b><small>mejor: '+num(Pd.best.km)+' km en '+fmtDur(Pd.best.sec)+' ('+fmtShort(Pd.best.iso)+')</small></div>':'')+
+    (Pd.coste>30&&!(x&&Pd.mismoTipo&&x.tipo==='trail')?'<div><span>Coste del desnivel ('+race.gain+')</span><b>+'+Math.round(Pd.coste/60)+' min</b></div>':'')+
     (obj?'<div><span>Frente al plan de ritmos ('+fmtDur(obj)+')</span><b style="color:'+(dif<=0?'var(--medio)':dif<=5?'var(--gold)':'#ff7a6b')+'">'+(dif>0?'+':'')+dif+' min</b></div>':'')+'</div>'+
-    '<p class="pf-note">Se recalcula sola con cada entreno que registres. Modelo: Riegel sobre tu mejor ritmo reciente + coste del desnivel.</p></div>';}
+    '<p class="pf-note">'+(x?'Se basa sobre todo en tus carreras reales de los últimos meses, que son lo más fiable. '+(Pd.src==='mixto'?'Tus entrenos recientes van más rápidos, así que la ajusto un poco hacia abajo.':''):'Se basa en tus entrenos de las últimas 6 semanas. Será más fiable cuando tengas carreras en el palmarés.')+'</p></div>';}
 
 /* ================= ESTADO DE FORMA (carga aguda / cronica) ================= */
 function cargaDia(l,tipo){var km=parseFloat(String(l.km||'').replace(',','.'))||0;if(!l.hecho||!km)return 0;var f={suave:1,medio:1.15,fuerte:1.5,carga:1,carrera:1.8}[tipo]||1.15;
